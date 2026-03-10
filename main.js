@@ -1,12 +1,10 @@
 const fs = require("fs");
-25
-
-//my id is 16001246
-// 1. Convert "hh:mm:ss am/pm" → total seconds since midnight
+//Helper(1)
 function timeToSeconds(timeStr) {
-    const [timePart, period] = timeStr.toLowerCase().split(" ");
-    let [hours, minutes, seconds] = timePart.split(":").map(Number);
+    let [time, period] = timeStr.toLowerCase().split(" "); //split _:_:_ am/pm
+    let [hours, minutes, seconds] = time.split(":").map(Number); //string -> number
 
+    // convert to 24 hour format
     if (period === "pm" && hours !== 12) {
         hours += 12;
     }
@@ -14,70 +12,24 @@ function timeToSeconds(timeStr) {
         hours = 0;
     }
 
-    return hours * 3600 + minutes * 60 + seconds;
+    return (hours * 3600) + (minutes * 60) + seconds;
+}
+//Helper(2)
+function formatTime(totalSeconds){
+
+    let hours = parseInt(totalSeconds / 3600);
+    totalSeconds = totalSeconds % 3600; //to get the remaining seconds after removing the hours
+
+    let min = parseInt(totalSeconds / 60);
+    let sec = totalSeconds % 60; //to get the remaining seconds after removing the minutes
+
+    // to ensure hh:mm:ss format
+    if (min < 10) min = "0" + min;
+    if (sec < 10) sec = "0" + sec;
+
+    return hours + ":" + min + ":" + sec;
 }
 
-// 2. Convert seconds → "h:mm:ss" format (h can be 1–2 digits usually)
-function secondsToDuration(seconds) {
-    if (seconds < 0) seconds = 0;
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-}
-
-// 3. Convert seconds → "hhh:mm:ss" format (hours padded to at least 3 digits only if ≥100)
-function secondsToTotalHours(seconds) {
-    if (seconds < 0) seconds = 0;
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    const hourStr = h >= 100 ? h.toString() : h.toString(); // no leading zero for <100
-    return `${hourStr}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-}
-
-// 4. Parse "h:mm:ss" or "hh:mm:ss" or "hhh:mm:ss" back to seconds
-function durationToSeconds(durationStr) {
-    const parts = durationStr.split(":").map(Number);
-    if (parts.length !== 3) return 0; // invalid → return 0 or throw later if needed
-
-    const [h, m, s] = parts;
-    return h * 3600 + m * 60 + s;
-}
-
-// 5. Get day of week number from date string "yyyy-mm-dd" (0=Sunday, 6=Saturday)
-function getDayOfWeek(dateStr) {
-    const date = new Date(dateStr);
-    return date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-}
-
-// 6. Check if date is in Eid reduced quota period (April 10–30, 2025)
-function isEidPeriod(dateStr) {
-    const date = new Date(dateStr);
-    const year = date.getFullYear();
-    const month = date.getMonth();     // 0=Jan, 3=Apr
-    const day = date.getDate();
-
-    if (year !== 2025) return false;
-    if (month !== 3) return false;     // April
-    return day >= 10 && day <= 30;
-}
-
-// 7. Get daily quota in seconds (used in metQuota and required hours)
-function getDailyQuotaSeconds(dateStr) {
-    return isEidPeriod(dateStr) ? 6 * 3600 : (8 * 3600 + 24 * 60); 
-}
-
-// Day name → number map (used later in function 9)
-const dayNameToNumber = {
-    Sunday: 0,
-    Monday: 1,
-    Tuesday: 2,
-    Wednesday: 3,
-    Thursday: 4,
-    Friday: 5,
-    Saturday: 6
-};
 // ============================================================
 // Function 1: getShiftDuration(startTime, endTime)
 // startTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
@@ -85,7 +37,15 @@ const dayNameToNumber = {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getShiftDuration(startTime, endTime) {
-    // TODO: Implement this function
+    let start = timeToSeconds(startTime);
+    let end = timeToSeconds(endTime);
+
+    if (end < start) {
+        end = end + (24 * 3600);
+    }
+    let diff = end - start;
+
+    return formatTime(diff);
 }
 
 // ============================================================
@@ -95,7 +55,31 @@ function getShiftDuration(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getIdleTime(startTime, endTime) {
-    // TODO: Implement this function
+    let start = timeToSeconds(startTime);
+    let end = timeToSeconds(endTime);
+
+    // if start after 10 pm and end before 8 am 
+    if(end < start){
+        end = end + (24 * 3600);
+    }
+
+    // delivery boundries
+    let delStart = 8 * 3600;   // 8 AM
+    let delEnd = 22 * 3600;    // 10 PM
+
+    let idle = 0;
+
+    // idle before 8am
+    if(start < delStart){
+        idle = idle + (Math.min(end, delStart) - start);
+    }
+
+    // idle after 10pm
+    if(end > delEnd){
+        idle = idle + (end - Math.max(start, delEnd));
+    }
+
+    return formatTime(idle);
 }
 
 // ============================================================
