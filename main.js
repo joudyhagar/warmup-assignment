@@ -4,6 +4,13 @@ function timeToSeconds(timeStr) {
     let [time, period] = timeStr.toLowerCase().split(" "); //split _:_:_ am/pm
     let [hours, minutes, seconds] = time.split(":").map(Number); //string -> number
 
+    // handles invalid inputs
+     if (hours < 1 || hours > 12 ||minutes < 0 || minutes > 59 ||seconds < 0 || seconds > 59 ||
+        (period !== "am" && period !== "pm")
+    ) {
+        throw new Error("Invalid time format");
+    }
+
     // convert to 24 hour format
     if (period === "pm" && hours !== 12) {
         hours += 12;
@@ -17,6 +24,11 @@ function timeToSeconds(timeStr) {
 //Helper(2)
 function formatTime(totalSeconds){
 
+    //handles invalid/negative inputs
+     if (totalSeconds < 0) {
+        totalSeconds = 0;
+    }
+
     let hours = parseInt(totalSeconds / 3600);
     totalSeconds = totalSeconds % 3600; //to get the remaining seconds after removing the hours
 
@@ -28,6 +40,20 @@ function formatTime(totalSeconds){
     if (sec < 10) sec = "0" + sec;
 
     return hours + ":" + min + ":" + sec;
+}
+
+//Helper(3)
+function isEid(dateStr) {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return year === 2025 && month === 4 && day >= 10 && day <= 30;
+}
+//Helper(4)
+function getDailyQuotaSec(dateStr) {
+    if (isEid(dateStr)) {
+        return (6 * 3600);
+    } else {
+        return (8 * 3600) + (24 * 60);
+    }
 }
 
 // ============================================================
@@ -89,7 +115,17 @@ function getIdleTime(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getActiveTime(shiftDuration, idleTime) {
-    // TODO: Implement this function
+    // converting shiftDuration to seconds
+    let [hour1, min1, sec1] = shiftDuration.split(":").map(Number);
+    let shift = (hour1 * 3600) + (min1 * 60) + sec1;
+
+    // converting idleTime to seconds
+    let [hour2, min2, sec2] = idleTime.split(":").map(Number);
+    let idle = (hour2 * 3600) + (min2 * 60) + sec2;
+
+    // to avoid negative active time will print 0 (incorrect input)
+    let active = Math.max(0, shift - idle);
+    return formatTime(active);
 }
 
 // ============================================================
@@ -99,7 +135,12 @@ function getActiveTime(shiftDuration, idleTime) {
 // Returns: boolean
 // ============================================================
 function metQuota(date, activeTime) {
-    // TODO: Implement this function
+    let [hour, min, sec] = activeTime.split(":").map(Number);
+    let activeSec = (hour * 3600) +(min * 60) + sec;
+
+    let quotaSec = getDailyQuotaSec(date);
+
+    return activeSec >= quotaSec;
 }
 
 // ============================================================
