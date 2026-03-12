@@ -257,7 +257,36 @@ function setBonus(textFile, driverID, date, newValue) {
 // Returns: number (-1 if driverID not found)
 // ============================================================
 function countBonusPerMonth(textFile, driverID, month) {
-    // TODO: Implement this function
+    let data = fs.readFileSync(textFile, "utf8");
+    let lines = data.trim().split("\n");
+    // to accept -4- and -04-
+    let monthStr = month.toString().padStart(2, "0");
+    let count = 0;
+    let found = false; //default not found
+
+    //to skip headings
+    for (let i = 1; i < lines.length; i++) {
+
+        let cols = lines[i].split(",");
+
+        if (cols[0] === driverID) {
+
+            found = true;
+
+            let dMonth = cols[2].split("-")[1]; //to get the month
+            //to test if hasBonus=true and the same month
+            if (dMonth === monthStr && cols[9].trim().toLowerCase() === "true") {
+                count++;
+            }
+        }
+    }
+
+    if(found){
+        return count
+    }
+    else{
+        return -1
+    }
 }
 
 // ============================================================
@@ -268,7 +297,30 @@ function countBonusPerMonth(textFile, driverID, month) {
 // Returns: string formatted as hhh:mm:ss
 // ============================================================
 function getTotalActiveHoursPerMonth(textFile, driverID, month) {
-    // TODO: Implement this function
+    let data = fs.readFileSync(textFile, "utf8");
+    let lines = data.trim().split("\n");
+    //to acceot both -4- and -04-
+    let monthStr = month.toString().padStart(2, "0");
+    let totalSec = 0; //initial total 
+
+    for (let i = 1; i < lines.length; i++) {
+
+        let cols = lines[i].split(",");
+
+        if (cols[0] === driverID) {
+
+            let dMonth = cols[2].split("-")[1];
+
+            if (dMonth === monthStr) {
+
+                let [hour, min, sec] = cols[7].split(":").map(Number);
+
+                totalSec += (hour * 3600) + (min * 60) + sec;
+            }
+        }
+    }
+
+    return formatTime(totalSec);
 }
 
 // ============================================================
