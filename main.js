@@ -150,8 +150,76 @@ function metQuota(date, activeTime) {
 // Returns: object with 10 properties or empty object {}
 // ============================================================
 function addShiftRecord(textFile, shiftObj) {
-    // TODO: Implement this function
+    // to read the file
+    let data = fs.readFileSync(textFile, 'utf8');
+    let lines = data.trim().split('\n');
+
+    // to check duplicate (driverID &  date)
+    for (let i = 1; i < lines.length; i++) {
+
+        let cols = lines[i].split(',');
+
+        if (cols[0] === shiftObj.driverID && cols[2] === shiftObj.date) {
+            return {};
+        }
+    }
+
+    // calculate the fields
+    let shiftDuration = getShiftDuration(shiftObj.startTime, shiftObj.endTime);
+    let idleTime = getIdleTime(shiftObj.startTime, shiftObj.endTime);
+    let activeTime = getActiveTime(shiftDuration, idleTime);
+    let metQ = metQuota(shiftObj.date, activeTime);
+    let hasBonus = false;
+
+    // create a new row
+    let newLine = [
+        shiftObj.driverID,
+        shiftObj.driverName,
+        shiftObj.date,
+        shiftObj.startTime,
+        shiftObj.endTime,
+        shiftDuration,
+        idleTime,
+        activeTime,
+        metQ,
+        hasBonus
+    ].join(',');
+
+    // to find the insertion index
+    let insertIndex = lines.length;
+
+    for (let i = lines.length - 1; i >= 1; i--) {
+
+        let cols = lines[i].split(',');
+
+        if (cols[0] === shiftObj.driverID) {
+            insertIndex = i + 1;
+            break;
+        }
+    }
+
+    // to insert the row
+    lines.splice(insertIndex, 0, newLine);
+
+    let newData = lines.join('\n') + '\n';
+
+    fs.writeFileSync(textFile, newData);
+
+    // to return object
+    return {
+        driverID: shiftObj.driverID,
+        driverName: shiftObj.driverName,
+        date: shiftObj.date,
+        startTime: shiftObj.startTime,
+        endTime: shiftObj.endTime,
+        shiftDuration: shiftDuration,
+        idleTime: idleTime,
+        activeTime: activeTime,
+        metQuota: metQ,
+        hasBonus: hasBonus
+    };
 }
+
 
 // ============================================================
 // Function 6: setBonus(textFile, driverID, date, newValue)
@@ -162,7 +230,23 @@ function addShiftRecord(textFile, shiftObj) {
 // Returns: nothing (void)
 // ============================================================
 function setBonus(textFile, driverID, date, newValue) {
-    // TODO: Implement this function
+    // to read the file
+    let data = fs.readFileSync(textFile, "utf8");
+    let lines = data.trim().split("\n");
+
+    for (let i = 1; i < lines.length; i++) {
+
+        let cols = lines[i].split(",");
+
+        if (cols[0] === driverID && cols[2] === date) {
+            //updating hasBonus
+            cols[9] = newValue.toString();
+            lines[i] = cols.join(",");
+            break;
+        }
+    }
+
+    fs.writeFileSync(textFile, lines.join("\n") + "\n");
 }
 
 // ============================================================
