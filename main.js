@@ -8,7 +8,7 @@ function timeToSeconds(timeStr) {
      if (hours < 1 || hours > 12 ||minutes < 0 || minutes > 59 ||seconds < 0 || seconds > 59 ||
         (period !== "am" && period !== "pm")
     ) {
-        throw new Error("Invalid time format");
+        return 0;
     }
 
     // convert to 24 hour format
@@ -240,7 +240,7 @@ function setBonus(textFile, driverID, date, newValue) {
 
         if (cols[0] === driverID && cols[2] === date) {
             //updating hasBonus
-            cols[9] = newValue.toString();
+            cols[cols.length-1] = newValue.toString();
             lines[i] = cols.join(",");
             break;
         }
@@ -275,7 +275,7 @@ function countBonusPerMonth(textFile, driverID, month) {
 
             let dMonth = cols[2].split("-")[1]; //to get the month
             //to test if hasBonus=true and the same month
-            if (dMonth === monthStr && cols[9].trim().toLowerCase() === "true") {
+            if (dMonth === monthStr && cols[cols.length-1].trim().toLowerCase() === "true") {
                 count++;
             }
         }
